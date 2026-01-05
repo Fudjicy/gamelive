@@ -1,0 +1,118 @@
+:root {
+  font-family: "Inter", system-ui, sans-serif;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+h1, h2, h3 {
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+button {
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #4f46e5;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.flex {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.flex > * {
+  flex: 1;
+  min-width: 220px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.quest {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.quest-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.steps {
+  margin-top: 10px;
+}
+
+.error {
+  color: #b91c1c;
+  margin-top: 8px;
+}
+
+.success {
+  color: #15803d;
+  margin-top: 8px;
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.nav a {
+  text-decoration: none;
+  color: #4f46e5;
+  font-weight: 600;
+}
