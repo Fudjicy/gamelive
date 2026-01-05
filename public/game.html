@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gamelive — Квесты</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        <a href="/">Главная</a>
+        <a href="/character.html">Персонаж</a>
+      </div>
+
+      <h1>Квесты</h1>
+
+      <div class="card" id="characterInfo"></div>
+
+      <div class="card">
+        <h2>Создать квест</h2>
+        <form id="questForm">
+          <label for="title">Название</label>
+          <input id="title" name="title" required />
+
+          <label for="description">Описание</label>
+          <textarea id="description" name="description" rows="2"></textarea>
+
+          <div class="flex">
+            <div>
+              <label for="xp_reward">XP награда</label>
+              <input id="xp_reward" name="xp_reward" type="number" min="1" max="1000" value="10" />
+            </div>
+            <div>
+              <label for="repeat_type">Повторяемость</label>
+              <select id="repeat_type" name="repeat_type">
+                <option value="none">Нет</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+            <div>
+              <label for="due_at">Дедлайн</label>
+              <input id="due_at" name="due_at" type="datetime-local" />
+            </div>
+          </div>
+
+          <label for="steps">Подзадачи (через запятую)</label>
+          <input id="steps" name="steps" placeholder="Например: собрать команду, подготовить план" />
+
+          <button type="submit">Создать</button>
+          <div id="questStatus" class="error"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Активные</h2>
+        <div id="activeQuests"></div>
+      </div>
+
+      <div class="card">
+        <h2>Выполненные</h2>
+        <div id="doneQuests"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { apiRequest, setStatus } from '/app.js';
+
+      const characterInfo = document.getElementById('characterInfo');
+      const activeContainer = document.getElementById('activeQuests');
+      const doneContainer = document.getElementById('doneQuests');
+      const questForm = document.getElementById('questForm');
+      const questStatus = document.getElementById('questStatus');
+
+      async function loadCharacter() {
+        const data = await apiRequest('/api/character');
+        if (!data.character) {
+          characterInfo.innerHTML = '<p>Создайте персонажа перед началом.</p>';
+          return;
+        }
+        const c = data.character;
+        characterInfo.innerHTML = `
+          <h2>${c.name}</h2>
+          <p>Уровень ${c.level} · XP ${c.xp}</p>
+        `;
+      }
+
+      function renderQuest(quest, isDone = false) {
+        const container = document.createElement('div');
+        container.className = 'quest';
+        const due = quest.due_at ? new Date(quest.due_at).toLocaleString('ru-RU') : 'Без дедлайна';
+        const steps = Array.isArray(quest.steps) ? quest.steps : [];
+        container.innerHTML = `
+          <h3>${quest.title}</h3>
+          <p>${quest.description || ''}</p>
+          <div class="badge">XP ${quest.xp_reward}</div>
+          <div>Дедлайн: ${due}</div>
+          <div>Повтор: ${quest.repeat_type}</div>
+          <div class="steps"></div>
+          <div class="quest-actions"></div>
+        `;
+        const stepsContainer = container.querySelector('.steps');
+        const actions = container.querySelector('.quest-actions');
+        if (steps.length > 0) {
+          const list = document.createElement('ul');
+          steps.forEach((step) => {
+            const item = document.createElement('li');
+            item.textContent = `${step.is_done ? '✅' : '⬜'} ${step.title}`;
+            item.addEventListener('click', async () => {
+              await apiRequest(`/api/steps/${step.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ is_done: !step.is_done }),
+              });
+              await refresh();
+            });
+            list.appendChild(item);
+          });
+          stepsContainer.appendChild(list);
+        }
+
+        if (!isDone) {
+          const completeBtn = document.createElement('button');
+          completeBtn.textContent = 'Завершить';
+          completeBtn.addEventListener('click', async () => {
+            await apiRequest(`/api/quests/${quest.id}/complete`, { method: 'POST' });
+            await refresh();
+          });
+          actions.appendChild(completeBtn);
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'secondary';
+        deleteBtn.textContent = 'Удалить';
+        deleteBtn.addEventListener('click', async () => {
+          await apiRequest(`/api/quests/${quest.id}`, { method: 'DELETE' });
+          await refresh();
+        });
+        actions.appendChild(deleteBtn);
+
+        return container;
+      }
+
+      async function loadQuests() {
+        const active = await apiRequest('/api/quests?status=active');
+        const done = await apiRequest('/api/quests?status=done');
+        activeContainer.innerHTML = '';
+        doneContainer.innerHTML = '';
+        if (active.items.length === 0) {
+          activeContainer.innerHTML = '<p>Пока нет активных квестов.</p>';
+        }
+        if (done.items.length === 0) {
+          doneContainer.innerHTML = '<p>Нет завершенных квестов.</p>';
+        }
+        active.items.forEach((quest) => activeContainer.appendChild(renderQuest(quest)));
+        done.items.forEach((quest) => doneContainer.appendChild(renderQuest(quest, true)));
+      }
+
+      async function refresh() {
+        await loadCharacter();
+        await loadQuests();
+      }
+
+      questForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setStatus(questStatus, '');
+        const formData = Object.fromEntries(new FormData(questForm).entries());
+        const steps = formData.steps
+          ? formData.steps.split(',').map((s) => s.trim()).filter(Boolean).map((title) => ({ title }))
+          : [];
+        const payload = {
+          title: formData.title,
+          description: formData.description,
+          xp_reward: Number(formData.xp_reward || 10),
+          due_at: formData.due_at || null,
+          repeat_type: formData.repeat_type || 'none',
+          steps,
+        };
+        try {
+          await apiRequest('/api/quests', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          questForm.reset();
+          await refresh();
+        } catch (error) {
+          setStatus(questStatus, error.message);
+        }
+      });
+
+      refresh();
+    </script>
+  </body>
+</html>

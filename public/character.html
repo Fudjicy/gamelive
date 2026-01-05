@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gamelive — Персонаж</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        <a href="/">Главная</a>
+        <a href="/game.html">Квесты</a>
+      </div>
+
+      <h1>Редактор персонажа</h1>
+      <div class="card">
+        <form id="characterForm">
+          <div class="flex">
+            <div>
+              <label for="name">Имя</label>
+              <input id="name" name="name" required />
+            </div>
+            <div>
+              <label for="age">Возраст</label>
+              <input id="age" name="age" type="number" min="1" max="120" required />
+            </div>
+          </div>
+          <div class="flex">
+            <div>
+              <label for="height_cm">Рост (см)</label>
+              <input id="height_cm" name="height_cm" type="number" min="50" max="250" required />
+            </div>
+            <div>
+              <label for="weight_kg">Вес (кг)</label>
+              <input id="weight_kg" name="weight_kg" type="number" min="20" max="300" required />
+            </div>
+          </div>
+          <div class="flex">
+            <div>
+              <label for="hair_style">Прическа</label>
+              <select id="hair_style" name="hair_style" required>
+                <option value="short">Короткие</option>
+                <option value="medium">Средние</option>
+                <option value="long">Длинные</option>
+                <option value="braid">Косы</option>
+              </select>
+            </div>
+            <div>
+              <label for="hair_color">Цвет волос</label>
+              <select id="hair_color" name="hair_color" required>
+                <option value="black">Черный</option>
+                <option value="brown">Коричневый</option>
+                <option value="blonde">Блонд</option>
+                <option value="red">Рыжий</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex">
+            <div>
+              <label for="outfit_top">Верх</label>
+              <select id="outfit_top" name="outfit_top" required>
+                <option value="hoodie">Худи</option>
+                <option value="shirt">Рубашка</option>
+                <option value="armor">Броня</option>
+              </select>
+            </div>
+            <div>
+              <label for="outfit_bottom">Низ</label>
+              <select id="outfit_bottom" name="outfit_bottom" required>
+                <option value="jeans">Джинсы</option>
+                <option value="shorts">Шорты</option>
+                <option value="armor">Броня</option>
+              </select>
+            </div>
+            <div>
+              <label for="outfit_shoes">Обувь</label>
+              <select id="outfit_shoes" name="outfit_shoes" required>
+                <option value="sneakers">Кеды</option>
+                <option value="boots">Ботинки</option>
+                <option value="sandals">Сандалии</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit">Сохранить</button>
+          <div id="formStatus" class="error"></div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module">
+      import { apiRequest, setStatus } from '/app.js';
+
+      const form = document.getElementById('characterForm');
+      const status = document.getElementById('formStatus');
+
+      async function loadCharacter() {
+        try {
+          const data = await apiRequest('/api/character');
+          if (data.character) {
+            Object.entries(data.character).forEach(([key, value]) => {
+              if (form.elements[key]) {
+                form.elements[key].value = value;
+              }
+            });
+          }
+        } catch (error) {
+          setStatus(status, error.message);
+        }
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setStatus(status, '');
+        const formData = Object.fromEntries(new FormData(form).entries());
+        try {
+          await apiRequest('/api/character', {
+            method: 'POST',
+            body: JSON.stringify(formData),
+          });
+          window.location.href = '/game.html';
+        } catch (error) {
+          setStatus(status, error.message);
+        }
+      });
+
+      loadCharacter();
+    </script>
+  </body>
+</html>
