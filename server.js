@@ -19,6 +19,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const DEV_AUTH = process.env.DEV_AUTH === 'true';
 
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET is required');
@@ -93,6 +94,24 @@ app.post('/api/auth/telegram', async (req, res) => {
   if (!initData || typeof initData !== 'string') {
     return jsonError(res, 400, 'bad_request', 'initData is required');
   }
+  if (DEV_AUTH && initData === 'dev') {
+    try {
+      const result = await pool.query(
+        `INSERT INTO users (telegram_id, username, first_name)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (telegram_id)
+         DO UPDATE SET username = EXCLUDED.username, first_name = EXCLUDED.first_name
+         RETURNING *`,
+        [999000111, 'dev_user', 'Dev']
+      );
+      const user = result.rows[0];
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '2h' });
+      res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
+      return res.json({ ok: true, user, dev: true });
+    } catch (error) {
+      return jsonError(res, 500, 'server_error', 'Failed to save user', error.message);
+    }
+  }
   let valid = false;
   try {
     valid = validateInitData(initData);
@@ -120,6 +139,33 @@ app.post('/api/auth/telegram', async (req, res) => {
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '2h' });
     res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
     return res.json({ ok: true, user });
+  } catch (error) {
+    return jsonError(res, 500, 'server_error', 'Failed to save user', error.message);
+  }
+});
+
+app.post('/api/auth/dev', async (req, res) => {
+  if (!DEV_AUTH) {
+    return jsonError(res, 404, 'not_found', 'DEV_AUTH is disabled');
+  }
+  const { telegram_id, username, first_name } = req.body || {};
+  const devTelegramId = Number(telegram_id || 999000111);
+  if (Number.isNaN(devTelegramId)) {
+    return jsonError(res, 400, 'validation_error', 'telegram_id must be numeric');
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO users (telegram_id, username, first_name)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (telegram_id)
+       DO UPDATE SET username = EXCLUDED.username, first_name = EXCLUDED.first_name
+       RETURNING *`,
+      [devTelegramId, username || 'dev_user', first_name || 'Dev']
+    );
+    const user = result.rows[0];
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '2h' });
+    res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
+    return res.json({ ok: true, user, dev: true });
   } catch (error) {
     return jsonError(res, 500, 'server_error', 'Failed to save user', error.message);
   }

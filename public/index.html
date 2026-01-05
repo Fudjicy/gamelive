@@ -15,6 +15,7 @@
         <label for="initData">initData</label>
         <textarea id="initData" rows="3"></textarea>
         <button id="loginBtn">Войти</button>
+        <button id="devLoginBtn" class="secondary" type="button">Dev вход</button>
         <div id="loginStatus" class="error"></div>
       </div>
 
@@ -39,6 +40,7 @@
 
       const initDataField = document.getElementById('initData');
       const loginBtn = document.getElementById('loginBtn');
+      const devLoginBtn = document.getElementById('devLoginBtn');
       const loginStatus = document.getElementById('loginStatus');
       const characterCard = document.getElementById('characterCard');
       const noCharacter = document.getElementById('noCharacter');
@@ -81,6 +83,19 @@
       }
 
       loginBtn.addEventListener('click', handleLogin);
+      devLoginBtn.addEventListener('click', async () => {
+        setStatus(loginStatus, '');
+        try {
+          await apiRequest('/api/auth/dev', {
+            method: 'POST',
+            body: JSON.stringify({}),
+          });
+          setStatus(loginStatus, 'Dev вход выполнен', 'success');
+          await loadCharacter();
+        } catch (error) {
+          setStatus(loginStatus, error.message);
+        }
+      });
 
       const autoInit = getTelegramInitData();
       if (autoInit) {
