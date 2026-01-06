@@ -16,74 +16,72 @@
       <h1>Редактор персонажа</h1>
       <div class="card">
         <form id="characterForm">
-          <div class="flex">
-            <div>
-              <label for="name">Имя</label>
-              <input id="name" name="name" required />
+          <div class="editor-grid">
+            <div class="avatar-preview">
+              <h2>Превью</h2>
+              <div class="avatar-canvas">
+                <img id="layer-base" class="avatar-layer" alt="base" />
+                <img id="layer-hair" class="avatar-layer" alt="hair" />
+                <img id="layer-top" class="avatar-layer" alt="top" />
+                <img id="layer-bottom" class="avatar-layer" alt="bottom" />
+                <img id="layer-shoes" class="avatar-layer" alt="shoes" />
+              </div>
+              <p class="badge">512×768</p>
             </div>
+
             <div>
-              <label for="age">Возраст</label>
-              <input id="age" name="age" type="number" min="1" max="120" required />
+              <h2>Параметры</h2>
+              <div class="flex">
+                <div>
+                  <label for="name">Имя</label>
+                  <input id="name" name="name" required />
+                </div>
+                <div>
+                  <label for="age">Возраст</label>
+                  <input id="age" name="age" type="number" min="1" max="120" required />
+                </div>
+              </div>
+              <div class="flex">
+                <div>
+                  <label for="height_cm">Рост (см)</label>
+                  <input id="height_cm" name="height_cm" type="number" min="50" max="250" required />
+                </div>
+                <div>
+                  <label for="weight_kg">Вес (кг)</label>
+                  <input id="weight_kg" name="weight_kg" type="number" min="20" max="300" required />
+                </div>
+              </div>
+
+              <input type="hidden" id="hair_style" name="hair_style" required />
+              <input type="hidden" id="hair_color" name="hair_color" required />
+              <input type="hidden" id="outfit_top" name="outfit_top" required />
+              <input type="hidden" id="outfit_bottom" name="outfit_bottom" required />
+              <input type="hidden" id="outfit_shoes" name="outfit_shoes" required />
+
+              <div class="asset-section">
+                <h3>Прически</h3>
+                <div class="asset-grid" id="hairOptions"></div>
+              </div>
+
+              <div class="asset-section">
+                <h3>Верх</h3>
+                <div class="asset-grid" id="topOptions"></div>
+              </div>
+
+              <div class="asset-section">
+                <h3>Низ</h3>
+                <div class="asset-grid" id="bottomOptions"></div>
+              </div>
+
+              <div class="asset-section">
+                <h3>Обувь</h3>
+                <div class="asset-grid" id="shoesOptions"></div>
+              </div>
+
+              <button type="submit">Сохранить</button>
+              <div id="formStatus" class="error"></div>
             </div>
           </div>
-          <div class="flex">
-            <div>
-              <label for="height_cm">Рост (см)</label>
-              <input id="height_cm" name="height_cm" type="number" min="50" max="250" required />
-            </div>
-            <div>
-              <label for="weight_kg">Вес (кг)</label>
-              <input id="weight_kg" name="weight_kg" type="number" min="20" max="300" required />
-            </div>
-          </div>
-          <div class="flex">
-            <div>
-              <label for="hair_style">Прическа</label>
-              <select id="hair_style" name="hair_style" required>
-                <option value="short">Короткие</option>
-                <option value="medium">Средние</option>
-                <option value="long">Длинные</option>
-                <option value="braid">Косы</option>
-              </select>
-            </div>
-            <div>
-              <label for="hair_color">Цвет волос</label>
-              <select id="hair_color" name="hair_color" required>
-                <option value="black">Черный</option>
-                <option value="brown">Коричневый</option>
-                <option value="blonde">Блонд</option>
-                <option value="red">Рыжий</option>
-              </select>
-            </div>
-          </div>
-          <div class="flex">
-            <div>
-              <label for="outfit_top">Верх</label>
-              <select id="outfit_top" name="outfit_top" required>
-                <option value="hoodie">Худи</option>
-                <option value="shirt">Рубашка</option>
-                <option value="armor">Броня</option>
-              </select>
-            </div>
-            <div>
-              <label for="outfit_bottom">Низ</label>
-              <select id="outfit_bottom" name="outfit_bottom" required>
-                <option value="jeans">Джинсы</option>
-                <option value="shorts">Шорты</option>
-                <option value="armor">Броня</option>
-              </select>
-            </div>
-            <div>
-              <label for="outfit_shoes">Обувь</label>
-              <select id="outfit_shoes" name="outfit_shoes" required>
-                <option value="sneakers">Кеды</option>
-                <option value="boots">Ботинки</option>
-                <option value="sandals">Сандалии</option>
-              </select>
-            </div>
-          </div>
-          <button type="submit">Сохранить</button>
-          <div id="formStatus" class="error"></div>
         </form>
       </div>
     </div>
@@ -93,17 +91,126 @@
 
       const form = document.getElementById('characterForm');
       const status = document.getElementById('formStatus');
+      const previewLayers = {
+        base: document.getElementById('layer-base'),
+        hair: document.getElementById('layer-hair'),
+        top: document.getElementById('layer-top'),
+        bottom: document.getElementById('layer-bottom'),
+        shoes: document.getElementById('layer-shoes'),
+      };
+
+      let assets = { base: [], hair: [], top: [], bottom: [], shoes: [] };
+      const selection = {
+        base: null,
+        hair: null,
+        top: null,
+        bottom: null,
+        shoes: null,
+      };
+
+      function assetById(type, id) {
+        return assets[type].find((item) => item.id === id) || assets[type][0];
+      }
+
+      function syncHiddenFields() {
+        form.elements.hair_style.value = selection.hair || '';
+        form.elements.hair_color.value = selection.hair || '';
+        form.elements.outfit_top.value = selection.top || '';
+        form.elements.outfit_bottom.value = selection.bottom || '';
+        form.elements.outfit_shoes.value = selection.shoes || '';
+      }
+
+      function setLayer(type, assetId) {
+        const asset = assetById(type, assetId);
+        if (!asset || !asset.src) {
+          previewLayers[type].removeAttribute('src');
+          return;
+        }
+        previewLayers[type].src = asset.src;
+      }
+
+      function updatePreview() {
+        setLayer('base', selection.base);
+        setLayer('hair', selection.hair);
+        setLayer('top', selection.top);
+        setLayer('bottom', selection.bottom);
+        setLayer('shoes', selection.shoes);
+        syncHiddenFields();
+      }
+
+      function renderOptions(type, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        if (!assets[type] || assets[type].length === 0) {
+          container.innerHTML = '<p>Нет доступных ассетов</p>';
+          return;
+        }
+        assets[type].forEach((asset) => {
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'asset-card';
+          const thumb = document.createElement('div');
+          thumb.className = 'asset-thumb';
+          if (asset.src) {
+            thumb.style.backgroundImage = `url(${asset.src})`;
+          }
+          const label = document.createElement('span');
+          label.textContent = asset.label || asset.id;
+          card.appendChild(thumb);
+          card.appendChild(label);
+          card.addEventListener('click', () => {
+            selection[type] = asset.id;
+            updatePreview();
+            renderAllOptions();
+          });
+          if (selection[type] === asset.id) {
+            card.classList.add('selected');
+          }
+          container.appendChild(card);
+        });
+      }
+
+      function renderAllOptions() {
+        renderOptions('hair', 'hairOptions');
+        renderOptions('top', 'topOptions');
+        renderOptions('bottom', 'bottomOptions');
+        renderOptions('shoes', 'shoesOptions');
+      }
+
+      function ensureDefaults() {
+        selection.base = selection.base || assets.base[0]?.id || null;
+        selection.hair = selection.hair || assets.hair[0]?.id || null;
+        selection.top = selection.top || assets.top[0]?.id || null;
+        selection.bottom = selection.bottom || assets.bottom[0]?.id || null;
+        selection.shoes = selection.shoes || assets.shoes[0]?.id || null;
+      }
+
+      async function loadCatalog() {
+        const response = await fetch('/assets/catalog.json');
+        if (!response.ok) {
+          throw new Error('catalog.json not found');
+        }
+        assets = await response.json();
+      }
 
       async function loadCharacter() {
         try {
+          await loadCatalog();
           const data = await apiRequest('/api/character');
           if (data.character) {
             Object.entries(data.character).forEach(([key, value]) => {
-              if (form.elements[key]) {
+              if (form.elements[key] && value !== null) {
                 form.elements[key].value = value;
               }
             });
+            selection.hair = data.character.hair_style || selection.hair;
+            selection.top = data.character.outfit_top || selection.top;
+            selection.bottom = data.character.outfit_bottom || selection.bottom;
+            selection.shoes = data.character.outfit_shoes || selection.shoes;
           }
+          ensureDefaults();
+          updatePreview();
+          renderAllOptions();
         } catch (error) {
           setStatus(status, error.message);
         }
@@ -112,6 +219,7 @@
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         setStatus(status, '');
+        syncHiddenFields();
         const formData = Object.fromEntries(new FormData(form).entries());
         try {
           await apiRequest('/api/character', {
@@ -124,7 +232,20 @@
         }
       });
 
-      loadCharacter();
+      const previewMode = new URLSearchParams(window.location.search).get('preview') === '1';
+      if (previewMode) {
+        loadCatalog()
+          .then(() => {
+            ensureDefaults();
+            updatePreview();
+            renderAllOptions();
+          })
+          .catch((error) => {
+            setStatus(status, error.message);
+          });
+      } else {
+        loadCharacter();
+      }
     </script>
   </body>
 </html>

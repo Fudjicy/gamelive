@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,6 +21,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 const JWT_SECRET = process.env.JWT_SECRET;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const DEV_AUTH = process.env.DEV_AUTH === 'true';
+
+function loadAssetCatalog() {
+  try {
+    const catalogPath = path.join(__dirname, 'public', 'assets', 'catalog.json');
+    const content = fs.readFileSync(catalogPath, 'utf-8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.warn('Asset catalog not found, using empty catalog');
+    return { base: [], hair: [], top: [], bottom: [], shoes: [] };
+  }
+}
+
+const ASSET_CATALOG = loadAssetCatalog();
+const ASSET_IDS = {
+  hair: ASSET_CATALOG.hair?.map((item) => item.id) || [],
+  top: ASSET_CATALOG.top?.map((item) => item.id) || [],
+  bottom: ASSET_CATALOG.bottom?.map((item) => item.id) || [],
+  shoes: ASSET_CATALOG.shoes?.map((item) => item.id) || [],
+};
 
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET is required');
@@ -201,6 +221,21 @@ function validateCharacterPayload(body) {
   }
   if (Number.isNaN(weight) || weight < 20 || weight > 300) {
     return 'Invalid weight';
+  }
+  if (!ASSET_IDS.hair.includes(body.hair_style)) {
+    return 'Invalid hair_style asset';
+  }
+  if (!ASSET_IDS.hair.includes(body.hair_color)) {
+    return 'Invalid hair_color asset';
+  }
+  if (!ASSET_IDS.top.includes(body.outfit_top)) {
+    return 'Invalid outfit_top asset';
+  }
+  if (!ASSET_IDS.bottom.includes(body.outfit_bottom)) {
+    return 'Invalid outfit_bottom asset';
+  }
+  if (!ASSET_IDS.shoes.includes(body.outfit_shoes)) {
+    return 'Invalid outfit_shoes asset';
   }
   return null;
 }
