@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gamelive — Вход</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Gamelive</h1>
+      <div class="card">
+        <h2>Авторизация Telegram</h2>
+        <p>Для локальной проверки вставьте initData из Telegram WebApp.</p>
+        <label for="initData">initData</label>
+        <textarea id="initData" rows="3"></textarea>
+        <button id="loginBtn">Войти</button>
+        <button id="devLoginBtn" class="secondary" type="button">Dev вход</button>
+        <div id="loginStatus" class="error"></div>
+      </div>
+
+      <div class="card" id="characterCard" hidden>
+        <h2>Персонаж</h2>
+        <div id="characterSummary"></div>
+        <div class="nav">
+          <a href="/character.html">Редактировать персонажа</a>
+          <a href="/game.html">Перейти к квестам</a>
+        </div>
+      </div>
+
+      <div class="card" id="noCharacter" hidden>
+        <h2>Создать персонажа</h2>
+        <p>У вас пока нет персонажа. Создайте его, чтобы начать игру.</p>
+        <a href="/character.html">Создать персонажа</a>
+      </div>
+    </div>
+
+    <script type="module">
+      import { apiRequest, getTelegramInitData, loginWithInitData, setStatus } from '/app.js';
+
+      const initDataField = document.getElementById('initData');
+      const loginBtn = document.getElementById('loginBtn');
+      const devLoginBtn = document.getElementById('devLoginBtn');
+      const loginStatus = document.getElementById('loginStatus');
+      const characterCard = document.getElementById('characterCard');
+      const noCharacter = document.getElementById('noCharacter');
+      const characterSummary = document.getElementById('characterSummary');
+
+      async function loadCharacter() {
+        try {
+          const data = await apiRequest('/api/character');
+          if (data.character) {
+            const c = data.character;
+            characterSummary.innerHTML = `
+              <p><strong>${c.name}</strong></p>
+              <p>Уровень ${c.level} · XP ${c.xp}</p>
+            `;
+            characterCard.hidden = false;
+            noCharacter.hidden = true;
+          } else {
+            characterCard.hidden = true;
+            noCharacter.hidden = false;
+          }
+        } catch (error) {
+          setStatus(loginStatus, error.message);
+        }
+      }
+
+      async function handleLogin() {
+        setStatus(loginStatus, '');
+        const initData = initDataField.value.trim() || getTelegramInitData();
+        if (!initData) {
+          setStatus(loginStatus, 'initData не найден');
+          return;
+        }
+        try {
+          await loginWithInitData(initData);
+          setStatus(loginStatus, 'Успешный вход', 'success');
+          await loadCharacter();
+        } catch (error) {
+          setStatus(loginStatus, error.message);
+        }
+      }
+
+      loginBtn.addEventListener('click', handleLogin);
+      devLoginBtn.addEventListener('click', async () => {
+        setStatus(loginStatus, '');
+        try {
+          await apiRequest('/api/auth/dev', {
+            method: 'POST',
+            body: JSON.stringify({}),
+          });
+          setStatus(loginStatus, 'Dev вход выполнен', 'success');
+          await loadCharacter();
+        } catch (error) {
+          setStatus(loginStatus, error.message);
+        }
+      });
+
+      const autoInit = getTelegramInitData();
+      if (autoInit) {
+        initDataField.value = autoInit;
+      }
+    </script>
+  </body>
+</html>

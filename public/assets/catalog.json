@@ -1,0 +1,57 @@
+{
+  "base": [
+    {
+      "id": "base_01",
+      "label": "Base 01",
+      "src": "/assets/base/base_01.png"
+    }
+  ],
+  "hair": [
+    {
+      "id": "hair_short_black",
+      "label": "Short Black",
+      "src": "/assets/hair/hair_short_black.png"
+    },
+    {
+      "id": "hair_long_black",
+      "label": "Long Black",
+      "src": "/assets/hair/hair_long_black.png"
+    }
+  ],
+  "top": [
+    {
+      "id": "top_hoodie",
+      "label": "Hoodie",
+      "src": "/assets/top/top_hoodie.png"
+    },
+    {
+      "id": "top_tshirt",
+      "label": "T-shirt",
+      "src": "/assets/top/top_tshirt.png"
+    }
+  ],
+  "bottom": [
+    {
+      "id": "bottom_jeans",
+      "label": "Jeans",
+      "src": "/assets/bottom/bottom_jeans.png"
+    },
+    {
+      "id": "bottom_shorts",
+      "label": "Shorts",
+      "src": "/assets/bottom/bottom_shorts.png"
+    }
+  ],
+  "shoes": [
+    {
+      "id": "shoes_sneakers",
+      "label": "Sneakers",
+      "src": "/assets/shoes/shoes_sneakers.png"
+    },
+    {
+      "id": "shoes_boots",
+      "label": "Boots",
+      "src": "/assets/shoes/shoes_boots.png"
+    }
+  ]
+}
